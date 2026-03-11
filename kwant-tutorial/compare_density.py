@@ -1,3 +1,8 @@
+"""
+nextnanopy: 1.0.3
+nextnano++: 2.4.27 
+"""
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
