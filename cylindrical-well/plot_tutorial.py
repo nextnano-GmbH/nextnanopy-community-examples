@@ -128,6 +128,6 @@ for row in range(N_ROWS):
 
 fig2.subplots_adjust(left=0.05, right=0.98, top=0.97, bottom=0.05, hspace=0.15, wspace=0.05)
 # fig2.tight_layout()
-fig.savefig("cylindrical_well_overview.png", dpi=300)
-fig2.savefig("cylindrical_well_states.png", dpi=300)
+fig.savefig("tutorial_quantum_corral_structure.png", dpi=300)
+fig2.savefig("tutorial_quantum_corral_states.png", dpi=300)
 plt.show()
