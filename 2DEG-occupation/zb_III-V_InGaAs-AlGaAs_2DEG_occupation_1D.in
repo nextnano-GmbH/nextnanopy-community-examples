@@ -1,0 +1,223 @@
+!TEXT
+    =========================================================================================================================
+    "Subband occupations of 2DEG - importance of 8-band model"
+    https://www.nextnano.com/docu/nextnanoplus/tutorials/zb_III-V_InGaAs-AlGaAs_2DEG_occupation_1D.html
+    -------------------------------------------------------------------------------------------------------------------------
+    This input file is provided to you by nextnano GmbH (https://www.nextnano.com) 
+    The last revision of this input file was done on 2025-01-23 using nextnano++ 2.4.27
+    Input file version 1.0.0
+    =========================================================================================================================
+!ENDTEXT
+
+$use_8_band_model = 0 # 1 -> using 8-band k.p model, 0 -> using 1-band effective mass model
+
+# thicknesses
+
+$Lx_schottky    = 20    # the thickness of the WHOLE Schottky layer, (DisplayUnit:nm) (ListOfValues:38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28)
+$Lx_Si_doping   = 3     # the thickness of the doped Schottky layer, 9 (nm) for A1366. IF A1365, it becomes 2 (nm) (DisplayUnit:nm)
+$Lx_spacer      = 7     # the thickness of the spacer (DisplayUnit:nm)
+$Lx_well        = 20    # quantum well (DisplayUnit:nm)
+$Lx_buffer      = 50    # buffer (DisplayUnit:nm)
+
+# grid spacing
+
+$dx  = 0.3
+
+# interfaces
+
+$x_reference           = 0                                                                      # (DoNotShowInUserInterface)
+$x_start_contact       = $x_reference - $dx                                                     # (DoNotShowInUserInterface)
+$x_contact_schottky    = $x_reference                                                           # (DoNotShowInUserInterface)
+$x_begin_Si_undoping   = $x_reference + $Lx_schottky - $Lx_Si_doping                            # (DoNotShowInUserInterface)
+$x_schottky_spacer     = $x_reference + $Lx_schottky                                            # (DoNotShowInUserInterface)
+$x_spacer_well         = $x_reference + $Lx_schottky + $Lx_spacer                               # (DoNotShowInUserInterface)
+$x_well_buffer         = $x_reference + $Lx_schottky + $Lx_spacer + $Lx_well                    # (DoNotShowInUserInterface)
+$x_end_buffer          = $x_reference + $Lx_schottky + $Lx_spacer + $Lx_well + $Lx_buffer       # (DoNotShowInUserInterface)
+
+$x_quantum_region_begin = $x_start_contact
+$x_quantum_region_end = $x_well_buffer + 5
+
+# mole fractions
+
+$AlAs_in_AlInAs_buffer    = 0.5
+$InAs_in_InGaAs_well      = 0.5
+$AlAs_in_AlInAs_spacer    = 0.5
+$AlAs_in_AlInAs_barrier   = 0.5
+$InAs_in_InGaAs_cap       = 0.5
+
+$Si_n_dope_conc_barrier   = 2e19   # concentration (DisplayUnit:cm^-3)
+
+# numbers of eigenstates computed
+$num_electron   = 4 # they are doubled for 8-band k.p due to degeneracy of the model
+$num_hole       = 0
+
+run{
+    quantum_poisson{}
+    strain{}
+}
+
+global{
+    simulate1D{}
+    substrate{ name = "InP" }
+    temperature = 2
+    crystal_zb{
+        x_hkl = [ 1, 0, 0 ]
+        y_hkl = [ 0, 1, 0 ]
+    }
+}
+
+impurities{
+    donor{
+        name = "Si_donor"
+        degeneracy = 2
+        fully_ionized{}
+    }
+}
+
+contacts{
+    schottky{
+        name      = "schottky_contact"
+        bias      = 0
+        barrier   = 0.65
+    }
+}
+
+structure{
+    region{ # contact layer
+        line{ x = [ $x_start_contact, $x_contact_schottky ] }
+        ternary_constant{
+        name = "Al(x)In(1-x)As"
+        alloy_x = $AlAs_in_AlInAs_barrier
+    }
+    contact{ name = "schottky_contact" }
+    }
+    region{ # Schottky layer
+        line{ x = [ $x_contact_schottky, $x_schottky_spacer ] }
+        ternary_constant{
+            name = "Al(x)In(1-x)As"
+            alloy_x = $AlAs_in_AlInAs_barrier
+        }
+    }
+    region{ # Si delta-doped layer 
+        line{ x = [ $x_begin_Si_undoping, $x_schottky_spacer ] }
+        doping{
+            constant{
+                name = "Si_donor"
+                conc = $Si_n_dope_conc_barrier
+            }
+        }
+    }
+    region{ # spacer layer
+        line{ x = [ $x_schottky_spacer, $x_spacer_well ] }
+        ternary_constant{
+            name = "Al(x)In(1-x)As"
+            alloy_x = $AlAs_in_AlInAs_spacer
+        }
+    }
+    region{# quantum well
+        line{ x = [ $x_spacer_well, $x_well_buffer ] }
+        ternary_constant{
+            name = "In(x)Ga(1-x)As"
+            alloy_x = $InAs_in_InGaAs_well
+        }
+    }
+    region{ # buffer layer
+        line{ x = [ $x_well_buffer, $x_end_buffer ] }
+        ternary_constant{
+            name = "Al(x)In(1-x)As"
+            alloy_x = $AlAs_in_AlInAs_buffer
+        }
+    }
+    output_region_index{}
+} 
+
+grid{
+    xgrid{
+        line{ pos = $x_start_contact        spacing = $dx }
+        line{ pos = $x_contact_schottky     spacing = $dx }
+        line{ pos = $x_begin_Si_undoping    spacing = $dx }
+        line{ pos = $x_schottky_spacer      spacing = $dx }
+        line{ pos = $x_spacer_well          spacing = $dx }
+        line{ pos = $x_well_buffer          spacing = $dx }
+        line{ pos = $x_end_buffer           spacing = $dx }
+    }
+}
+
+classical{
+    Gamma{}
+    HH{}
+    LH{}
+    SO{}
+    output_bandedges{ averaged = no }
+    output_bandgap{}
+    output_carrier_densities{}
+    output_ionized_dopant_densities{}
+    bulk_dispersion{
+        output_bulk_dispersions{}
+        KP8{
+            use_Luttinger_parameters   = yes
+            from_6band_parameters      = yes
+            evaluate_S                 = yes
+            approximate_kappa          = yes
+        }
+        Gamma{}
+        path{
+            name = "well"
+            spacing = 0.1
+            position{ x = $x_spacer_well + $dx}
+            point{ k = [2/sqrt(3),2/sqrt(3),2/sqrt(3)] }
+            point{ k = [0,0,0] }
+            point{ k = [0,0,2] }
+        }
+    }
+}
+
+strain{
+    pseudomorphic_strain{}
+}
+
+poisson{
+    between_fermi_levels{}
+    output_potential{}
+    output_electric_field{}
+}
+
+quantum{
+    region{
+        name = "2DEG"
+        x = [ $x_quantum_region_begin, $x_quantum_region_end ]
+        boundary{ x = dirichlet }
+
+!IF($use_8_band_model)
+        kp_8band{
+            num_electrons   = 2 * $num_electron
+            num_holes       = 2 * $num_hole
+            k_integration{
+                relative_size       = 0.1
+                num_points          = 5
+                num_subpoints       = 10
+                force_k0_subspace   = no
+                symmetry = C2
+            }
+            kp_parameters{
+                use_Luttinger_parameters   = yes
+                from_6band_parameters      = yes
+                evaluate_S                 = yes
+                approximate_kappa          = yes
+            }
+            avoid_spurious = yes
+        }
+!ELSE
+        Gamma{ num_ev = $num_electron }
+!ENDIF
+        output_wavefunctions{
+            probabilities   = yes
+            energy_shift    = shifted
+            all_k_points    = no
+        }
+
+        output_subband_densities{
+            
+        }
+    }
+}
