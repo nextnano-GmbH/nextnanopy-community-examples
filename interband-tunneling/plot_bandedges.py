@@ -34,17 +34,16 @@ def plot_bandedges(ax, sweep_folder, bias_folder):
     ax.plot(coord, gamma, label="Gamma")
     ax.plot(coord, el_fermi_level, linestyle='--', label="Electron Fermi Level")
     ax.plot(coord, hole_fermi_level, linestyle='--', label="Hole Fermi Level")
-
+    ax.set_xlabel("Position (nm)")
+    ax.set_ylabel("Energy (eV)")
     ax.legend()
 
 
-fig, ax = plt.subplots(figsize=(8, 6))
-plot_bandedges(ax, sweep_folder, bias1_folder)
-plt.savefig("tutorials_interband_tunneling_in_nitride_junction-bandedge_02.png", dpi=2048/8)
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+plot_bandedges(axes[0], sweep_folder, bias1_folder)
 
-fig, ax = plt.subplots(figsize=(8, 6))
-plot_bandedges(ax, sweep_folder, bias2_folder)
-plt.savefig("tutorials_interband_tunneling_in_nitride_junction-bandedge_07.png", dpi=2048/8)
+plot_bandedges(axes[1], sweep_folder, bias2_folder)
+plt.savefig("1D_interband_tunneling_in_nitride_junction_bandedges.png", dpi=2048/8)
 
 plt.show()
 
