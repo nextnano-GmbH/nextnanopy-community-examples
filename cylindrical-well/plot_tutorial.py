@@ -96,8 +96,10 @@ N_ROWS = 4
 flat_states  = STATES[:4], STATES[4:]   # row 0, row 1
 surf_states  = STATES[:4], STATES[4:]   # row 2, row 3
 
-fig2 = plt.figure(figsize=(N_COLS * 3, N_ROWS * 4))
+fig2 = plt.figure(figsize=(N_COLS * 3.5, N_ROWS * 4))
 letters = iter("abcdefghijklmnop")
+n_l_pairs = ["(1, 1)", "(1, 1)", "(1, -1)", "(1, 2)",
+             "(1, -2)", "(2, 0)", "(1, 6)", "(3, 1)"]
 
 for row in range(N_ROWS):
     is_surface = row >= 2
@@ -113,21 +115,22 @@ for row in range(N_ROWS):
         if is_surface:
             ax = fig2.add_subplot(N_ROWS, N_COLS, subplot_idx, projection="3d")
             plot_probabilities_surface(ax, data_file_states, state)
-            ax.text2D(-0.08, 0.95, letter, transform=ax.transAxes,
-                      fontsize=12, fontweight="bold", va="bottom", ha="right")
+            ax.text2D(0.05, 0.95, letter, transform=ax.transAxes,
+                      fontsize=14, fontweight="bold", va="bottom", ha="right")        
         else:
             ax = fig2.add_subplot(N_ROWS, N_COLS, subplot_idx)
             plot_probabilities(ax, data_file_states, state)
             plot_structure_borders(ax, data_file_structure)
             ax.grid(False)
-            ax.text(-0.08, 1.02, letter, transform=ax.transAxes,
-                    fontsize=12, fontweight="bold", va="bottom", ha="right")
+            ax.text(0.05, 1.02, letter, transform=ax.transAxes,
+                    fontsize=14, fontweight="bold", va="bottom", ha="right")
             ax.set_xlabel("x (nm)" if is_bottom_flat else "")
             ax.set_ylabel("y (nm)" if is_left else "")
             ax.tick_params(labelbottom=is_bottom_flat, labelleft=is_left)
+            ax.set_title(f"State {state}, (n, l) = {n_l_pairs[STATES.index(state)]}", fontsize=12)
 
-fig2.subplots_adjust(left=0.05, right=0.98, top=0.97, bottom=0.05, hspace=0.15, wspace=0.05)
+fig2.subplots_adjust(left=0.08, right=0.98, top=0.97, bottom=0.05, hspace=0.05, wspace=0.05)
 # fig2.tight_layout()
 fig.savefig("tutorial_quantum_corral_structure.png", dpi=300)
 fig2.savefig("tutorial_quantum_corral_states.png", dpi=300)
-plt.show()
+# plt.show()
