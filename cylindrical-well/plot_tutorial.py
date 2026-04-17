@@ -7,15 +7,19 @@ from pathlib import Path
 import numpy as np
 import nextnanopy as nn
 from nextnanopy.utils.plotting import use_nxt_style
-from nextnanopy.utils.plotting import NXT_BLUE, GREEN, NXT_BLUE_COLORMAP, DANDELION
+from nextnanopy.utils.plotting import NXT_BLUE, GREEN, NXT_BLUE_COLORMAP
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, BoundaryNorm
 
 use_nxt_style()
+plt.rcParams["xtick.direction"] = "out"
+plt.rcParams["ytick.direction"] = "out"
 
 folder_path = Path(r"c:\Users\Heorhii\Documents\nextnano\Output\2DQuantumCorral_nnp")
 structure_file = folder_path / "Structure" / "materials.vtr"
 states_file = folder_path / "bias_00000" / "Quantum" / "quantum_region" / "Gamma" / "probabilities_k00000.vtr"
+
+STATES = [1, 2, 3, 4, 5, 6, 15, 20]
 
 
 def plot_structure(ax, data_file):
@@ -47,61 +51,83 @@ def plot_structure_borders(ax, data_file, color="white", linewidth=1.0):
                colors=color, linewidths=linewidth)
 
 
-def plot_probabilities(ax, data_file, state_index, vmin, vmax):
+def plot_probabilities(ax, data_file, state_index):
     x = data_file.coords[0].value
     y = data_file.coords[1].value
     psi2 = data_file.variables[state_index - 1].value
 
-    mesh = ax.pcolormesh(x, y, psi2.T, cmap=NXT_BLUE_COLORMAP, shading="auto",
-                         vmin=vmin, vmax=vmax)
+    mesh = ax.pcolormesh(x, y, psi2.T, cmap=NXT_BLUE_COLORMAP, shading="auto")
     ax.set_aspect("equal", adjustable="box")
     return mesh
 
 
-def plot_probabilities_surface(ax, data_file, state_index, vmin, vmax, z_aspect=0.5):
+def plot_probabilities_surface(ax, data_file, state_index, z_aspect=0.5):
     x = data_file.coords[0].value
     y = data_file.coords[1].value
-    psi2 = data_file.variables[state_index - 1].value.copy()
-    psi2[psi2 < 1e-8] = 0.0
+    psi2 = data_file.variables[state_index - 1].value
 
     X, Y = np.meshgrid(x, y)
     surf = ax.plot_surface(X, Y, psi2.T, cmap=NXT_BLUE_COLORMAP, edgecolor="none",
                            shade=False, antialiased=False,
-                           rcount=psi2.shape[0], ccount=psi2.shape[1],
-                           vmin=vmin, vmax=vmax)
+                           rcount=psi2.shape[0], ccount=psi2.shape[1])
     ax.set_box_aspect((1, 1, z_aspect))
-    ax.set_xlabel("x (nm)")
-    ax.set_ylabel("y (nm)")
     ax.set_zticks([])
     for pane in (ax.xaxis.pane, ax.yaxis.pane, ax.zaxis.pane):
-        pane.set_facecolor((0.3, 0.3, 0.3, 1.0))
+        pane.fill = True
+        pane.set_facecolor("darkgray")
     return surf
 
 
 data_file_structure = nn.DataFile(structure_file, product="nextnano++")
 data_file_states = nn.DataFile(states_file, product="nextnano++")
 
-psi2_all = np.stack([data_file_states.variables[i].value for i in range(9)])
-vmin, vmax = psi2_all.min(), psi2_all.max()
-
+# --- fig 1: structure ---
 fig, ax = plt.subplots(figsize=(6, 6))
 plot_structure(ax, data_file_structure)
 ax.set_xlabel("x (nm)")
 ax.set_ylabel("y (nm)")
 ax.grid(False)
 
-for i in range(1, 10):
-    fig = plt.figure(figsize=(12, 6))
-    ax_flat = fig.add_subplot(1, 2, 1)
-    ax_surf = fig.add_subplot(1, 2, 2, projection="3d")
+# --- fig 2: 4 rows x 4 cols ---
+# rows 0-1: flat colormap (states split into two groups of 4)
+# rows 2-3: 3D surface (same grouping)
+N_COLS = 4
+N_ROWS = 4
+flat_states  = STATES[:4], STATES[4:]   # row 0, row 1
+surf_states  = STATES[:4], STATES[4:]   # row 2, row 3
 
-    mesh = plot_probabilities(ax_flat, data_file_states, state_index=i, vmin=vmin, vmax=vmax)
-    plot_structure_borders(ax_flat, data_file_structure)
-    ax_flat.set_xlabel("x (nm)")
-    ax_flat.set_ylabel("y (nm)")
-    ax_flat.grid(False)
+fig2 = plt.figure(figsize=(N_COLS * 3, N_ROWS * 4))
+letters = iter("abcdefghijklmnop")
 
-    plot_probabilities_surface(ax_surf, data_file_states, state_index=i, vmin=vmin, vmax=vmax)
-    fig.colorbar(mesh, ax=[ax_flat, ax_surf], label=r"$|\Psi|^2$")
+for row in range(N_ROWS):
+    is_surface = row >= 2
+    group = (flat_states if not is_surface else surf_states)[row % 2]
 
+    for col, state in enumerate(group):
+        subplot_idx = row * N_COLS + col + 1
+        letter = next(letters)
+
+        is_left = col == 0
+        is_bottom_flat = row == 1
+
+        if is_surface:
+            ax = fig2.add_subplot(N_ROWS, N_COLS, subplot_idx, projection="3d")
+            plot_probabilities_surface(ax, data_file_states, state)
+            ax.text2D(-0.08, 0.95, letter, transform=ax.transAxes,
+                      fontsize=12, fontweight="bold", va="bottom", ha="right")
+        else:
+            ax = fig2.add_subplot(N_ROWS, N_COLS, subplot_idx)
+            plot_probabilities(ax, data_file_states, state)
+            plot_structure_borders(ax, data_file_structure)
+            ax.grid(False)
+            ax.text(-0.08, 1.02, letter, transform=ax.transAxes,
+                    fontsize=12, fontweight="bold", va="bottom", ha="right")
+            ax.set_xlabel("x (nm)" if is_bottom_flat else "")
+            ax.set_ylabel("y (nm)" if is_left else "")
+            ax.tick_params(labelbottom=is_bottom_flat, labelleft=is_left)
+
+fig2.subplots_adjust(left=0.05, right=0.98, top=0.97, bottom=0.05, hspace=0.15, wspace=0.05)
+# fig2.tight_layout()
+fig.savefig("cylindrical_well_overview.png", dpi=300)
+fig2.savefig("cylindrical_well_states.png", dpi=300)
 plt.show()
